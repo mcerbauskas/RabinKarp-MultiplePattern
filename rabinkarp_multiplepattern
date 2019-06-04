@@ -1,0 +1,92 @@
+1 
+2 package rabinkarp
+3 
+4 const base = 16777619
+5 
+6 // Search searches given patterns in txt and returns the matched ones. Returns
+7 // empty string slice if there is no match.
+8 func Search(txt string, patterns []string) []string {
+9   in := indices(txt, patterns)
+10  matches := make([]string, len(in))
+11  i := 0
+12  for j, p := range patterns {
+13      if _, ok := in[j]; ok {
+14          matches[i] = p
+15          i++
+16      }
+17  }
+18
+19  return matches
+20}
+21
+22// indices returns the indices of the first occurence of each pattern in txt.
+23func indices(txt string, patterns []string) map[int]int {
+24  n, m := len(txt), minLen(patterns)
+25  matches := make(map[int]int)
+26
+27  if n < m || len(patterns) == 0 {
+28      return matches
+29  }
+30
+31  var mult uint32 = 1 // mult = base^(m–1)
+32  for i := 0; i < m–1; i++ {
+33      mult = (mult * base)
+34  }
+35
+36  hp := hashPatterns(patterns, m)
+37  h := hash(txt[:m])
+38  for i := 0; i < n–m+1 && len(hp) > 0; i++ {
+39      if i > 0 {
+40          h = h – mult*uint32(txt[i–1])
+41          h = h*base + uint32(txt[i+m–1])
+42      }
+43
+44      if mps, ok := hp[h]; ok {
+45          for _, pi := range mps {
+46              pat := patterns[pi]
+47              e := i + len(pat)
+48              if _, ok := matches[pi]; !ok && e <= n && pat == txt[i:e] {
+49                  matches[pi] = i
+50              }
+51          }
+52      }
+53  }
+54  return matches
+55}
+56
+57func hash(s string) uint32 {
+58  var h uint32
+59  for i := 0; i < len(s); i++ {
+60      h = (h*base + uint32(s[i]))
+61  }
+62  return h
+63}
+64
+65func hashPatterns(patterns []string, l int) map[uint32][]int {
+66  m := make(map[uint32][]int)
+67  for i, t := range patterns {
+68      h := hash(t[:l])
+69      if _, ok := m[h]; ok {
+70          m[h] = append(m[h], i)
+71      } else {
+72          m[h] = []int{i}
+73      }
+74  }
+75
+76  return m
+77}
+78
+79func minLen(patterns []string) int {
+80  if len(patterns) == 0 {
+81      return 0
+82  }
+83
+84  m := len(patterns[0])
+85  for i := range patterns {
+86      if m > len(patterns[i]) {
+87          m = len(patterns[i])
+88      }
+89  }
+90
+91  return m
+92}
